@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Sidebar from './components/Sidebar';
@@ -387,11 +387,39 @@ function AdminRequestDetailsPage() {
       .then((response) => {
         setRequest(response.data);
         setPurchaseValues(Object.fromEntries(response.data.items.map((item) => [item.itemId, item.quantityPurchased || 0])));
-        api.get(`/notifications/request/${id}`)
-          .then((notificationResponse) => setNotifications(notificationResponse.data))
-          .catch((requestError) => setError(requestError.response?.data?.message || 'Notification statuses could not be loaded.'));
       })
       .catch((requestError) => setError(requestError.response?.data?.message || 'Request details could not be loaded.'));
+  }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    let loading = false;
+    const loadNotifications = () => api.get(`/notifications/request/${id}`)
+      .then((response) => {
+        if (active) setNotifications(response.data);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.response?.data?.message || 'Notification statuses could not be loaded.');
+      });
+
+    const pollNotifications = async () => {
+      if (loading) return;
+      loading = true;
+      try {
+        await loadNotifications();
+      } finally {
+        loading = false;
+      }
+    };
+
+    pollNotifications();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') pollNotifications();
+    }, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
   }, [id]);
 
   const runAction = async (action, body = {}) => {
@@ -1027,11 +1055,26 @@ function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState('');
   const [retrying, setRetrying] = useState('');
+  const loadingRef = useRef(false);
 
-  const loadNotifications = () => api.get('/notifications').then((response) => setNotifications(response.data))
-    .catch((requestError) => setError(requestError.response?.data?.message || 'Notifications could not be loaded.'));
+  const loadNotifications = async (silent = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    try {
+      const response = await api.get('/notifications');
+      setNotifications(response.data);
+    } catch (requestError) {
+      if (!silent) setError(requestError.response?.data?.message || 'Notifications could not be loaded.');
+    } finally {
+      loadingRef.current = false;
+    }
+  };
   useEffect(() => {
     loadNotifications();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadNotifications(true);
+    }, 5000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const retry = async (id) => {
@@ -1051,6 +1094,7 @@ function NotificationsPage() {
     <DashboardShell role="admin" title="Notifications">
       <div className="card">
         {error && <div className="alert error">{error}</div>}
+        <p className="muted notification-refresh-note">Statuses refresh automatically every 5 seconds.</p>
         <table className="data-table">
           <thead>
             <tr>
