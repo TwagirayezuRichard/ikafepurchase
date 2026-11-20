@@ -97,25 +97,58 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [installHelp, setInstallHelp] = useState(false);
+  const [installError, setInstallError] = useState('');
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(iOS);
+    const userAgent = navigator.userAgent;
+    setIsIOS(/iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+    setIsAndroid(/Android/i.test(userAgent));
+    setIsInstalled(
+      window.matchMedia('(display-mode: standalone)').matches ||
+      navigator.standalone === true
+    );
 
     const handleInstallPrompt = (event) => {
-      event.preventDefault();
       setInstallPrompt(event);
     };
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+      window.ikafeInstallPrompt = null;
+    };
 
-    window.addEventListener('beforeinstallprompt', handleInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+    if (window.ikafeInstallPrompt) {
+      handleInstallPrompt(window.ikafeInstallPrompt);
+    }
+    window.addEventListener('ikafeinstallprompt', handleInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('ikafeinstallprompt', handleInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    await installPrompt.userChoice;
-    setInstallPrompt(null);
+    if (installPrompt) {
+      setInstallError('');
+      try {
+        await installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        window.ikafeInstallPrompt = null;
+        setInstallPrompt(null);
+        setInstallHelp(outcome !== 'accepted');
+        setIsInstalled(outcome === 'accepted');
+        return;
+      } catch {
+        setInstallError('Automatic installation could not be opened. Use your browser menu to install the app.');
+        setInstallPrompt(null);
+        window.ikafeInstallPrompt = null;
+      }
+    }
+    setInstallHelp(true);
   };
 
   useEffect(() => {
@@ -180,18 +213,30 @@ function LoginPage() {
 
         <div className="mobile-download">
           <p>Use Ikafe Haven on your phone</p>
-          {installPrompt ? (
+          {isInstalled ? (
+            <div className="ios-install">App installed — open Ikafepurcharseapp from your home screen.</div>
+          ) : installPrompt ? (
             <button type="button" className="download-button" onClick={handleInstall}>
-              Download / Install App
+              Install Ikafepurcharseapp
             </button>
           ) : isIOS ? (
             <div className="ios-install">
               Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.
             </div>
           ) : (
-            <button type="button" className="download-button" onClick={() => setError('Open this page in Chrome or another supported browser, then choose “Add to Home Screen.”')}>
-              Download for Android
-            </button>
+            <>
+              <button type="button" className="download-button" onClick={handleInstall}>
+                Install Ikafepurcharseapp
+              </button>
+              {installError && <p className="alert error" role="status">{installError}</p>}
+              {installHelp && (
+                <p className="install-help">
+                  {isAndroid
+                    ? <>In Chrome, tap <strong>⋮</strong>, then <strong>Install app</strong> or <strong>Add to Home screen</strong>.</>
+                    : <>Open this website in Chrome on Android, then use <strong>⋮ → Install app</strong> or <strong>Add to Home screen</strong>.</>}
+                </p>
+              )}
+            </>
           )}
         </div>
 
