@@ -13,6 +13,9 @@ export const AuthProvider = ({ children }) => {
       .then((response) => setUser(response.data))
       .catch((error) => {
         setUser(null);
+        if (error.response?.status === 401) {
+          window.sessionStorage.removeItem('rpms_session_token');
+        }
         if (error.response && error.response.status !== 401) {
           setBootstrapError(error.response.data?.message || 'Unable to verify your session.');
         }
@@ -22,6 +25,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const response = await api.post('/auth/login', credentials);
+    if (response.data.token) {
+      window.sessionStorage.setItem('rpms_session_token', response.data.token);
+    }
     setUser(response.data.user);
     return response.data;
   };
@@ -33,11 +39,13 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       throw error;
     } finally {
+      window.sessionStorage.removeItem('rpms_session_token');
       setUser(null);
     }
   };
 
   const clearUser = () => {
+    window.sessionStorage.removeItem('rpms_session_token');
     setUser(null);
   };
 
