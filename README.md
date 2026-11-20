@@ -6,7 +6,9 @@ Create a **Static Site** connected to this repository. Leave the root directory 
 
 - **Build command:** `npm install && npm run build`
 - **Publish directory:** `dist`
-- **Environment variable:** `VITE_API_URL=https://<your-backend-service>.onrender.com/api/v1`
+- **Environment variable (optional):** `VITE_API_URL=https://purchaseorder-backend.onrender.com/api/v1`
+
+The app defaults to the deployed backend URL above. Set `VITE_API_URL` only if you use a different backend URL.
 
 Add a rewrite rule so client-side routes work when opened directly:
 
@@ -27,4 +29,4 @@ npm install
 npm run dev
 ```
 
-For a non-default API URL, copy `.env.example` to `.env.local` and set `VITE_API_URL`. Do not commit environment files containing deployment settings.
+For local development, copy `.env.example` to `.env.local` and set `VITE_API_URL=http://localhost:5000/api/v1`. Do not commit environment files containing deployment settings.
