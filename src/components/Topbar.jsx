@@ -1,11 +1,23 @@
-import { Bell } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 
-export default function Topbar({ title, subtitle, user }) {
+export default function Topbar({ title, subtitle, user, mobileMenuOpen, onMenuClick }) {
   return (
     <header className="topbar">
-      <div>
-        <p className="eyebrow">Dashboard</p>
-        <h1>{title}</h1>
+      <div className="topbar-title">
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="app-sidebar"
+          onClick={onMenuClick}
+        >
+          {mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}
+        </button>
+        <div>
+          <p className="eyebrow">Dashboard</p>
+          <h1>{title}</h1>
+        </div>
       </div>
 
       <div className="topbar-right">

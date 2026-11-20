@@ -26,9 +26,20 @@ function DashboardShell({ role, title, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [logoutError, setLogoutError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [mobileMenuOpen]);
 
   const handleLogout = async () => {
     setLogoutError('');
+    setMobileMenuOpen(false);
     try {
       await logout();
     } catch {
@@ -39,9 +50,27 @@ function DashboardShell({ role, title, children }) {
 
   return (
     <div className="app-shell">
-      <Sidebar role={role} onLogout={handleLogout} />
+      {mobileMenuOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      <Sidebar
+        role={role}
+        onLogout={handleLogout}
+        mobileOpen={mobileMenuOpen}
+        onNavigate={() => setMobileMenuOpen(false)}
+      />
       <main className="main-panel">
-        <Topbar title={title} user={user} />
+        <Topbar
+          title={title}
+          user={user}
+          mobileMenuOpen={mobileMenuOpen}
+          onMenuClick={() => setMobileMenuOpen((open) => !open)}
+        />
         <div className="content-panel">
           {logoutError && <div className="alert error">{logoutError}</div>}
           {children}

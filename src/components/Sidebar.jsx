@@ -23,11 +23,11 @@ const employeeLinks = [
   { to: '/employee/profile', label: 'Profile', icon: ShieldCheck },
 ];
 
-export default function Sidebar({ role, onLogout }) {
+export default function Sidebar({ role, onLogout, mobileOpen, onNavigate }) {
   const links = role === 'admin' ? adminLinks : employeeLinks;
 
   return (
-    <aside className="sidebar">
+    <aside id="app-sidebar" className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="brand-box">
         <img className="brand-mark" src={ikafeLogo} alt="Ikafe Haven" />
         <div>
@@ -38,7 +38,7 @@ export default function Sidebar({ role, onLogout }) {
 
       <nav className="nav-list">
         {links.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} end={to === '/admin' || to === '/employee'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink key={to} to={to} end={to === '/admin' || to === '/employee'} onClick={onNavigate} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Icon size={18} />
             <span>{label}</span>
           </NavLink>

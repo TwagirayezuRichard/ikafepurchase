@@ -10,7 +10,7 @@ Create a **Static Site** connected to this repository. Leave the root directory 
 
 The app defaults to the deployed backend URL above. Set `VITE_API_URL` only if you use a different backend URL.
 
-Add a rewrite rule so client-side routes work when opened directly:
+Add a rewrite rule so client-side routes work when opened directly. If this Static Site already exists, add the rule in its **Settings → Redirects/Rewrites** page:
 
 - **Source:** `/*`
 - **Destination:** `/index.html`
