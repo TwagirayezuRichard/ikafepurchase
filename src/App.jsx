@@ -1131,7 +1131,7 @@ function SettingsPage() {
         <div>
           <h3>Notification services</h3>
           <p>Email: <span className={`status-badge ${status?.emailConfigured ? 'approved' : 'rejected'}`}>{status?.emailConfigured ? 'Configured' : 'Not configured'}</span></p>
-          <p className="muted">Set SMTP credentials in backend/.env and restart the API. Secrets are never shown in this dashboard.</p>
+          <p className="muted">Configure Resend API or SMTP credentials in Render environment settings, then redeploy the API. Secrets are never shown here.</p>
         </div>
         <div>
           <h3>Security</h3>
