@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import StatCard from './components/StatCard';
-import api, { warmupApi } from './services/api';
+import api from './services/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ikafeLogo from './assets/ikafe-logo.png';
 
@@ -104,7 +104,6 @@ function LoginPage() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    warmupApi().catch(() => undefined);
     const userAgent = navigator.userAgent;
     setIsIOS(/iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
     setIsAndroid(/Android/i.test(userAgent));
@@ -163,16 +162,14 @@ function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError('');
-    setLoginStage('Connecting to server...');
+    setLoginStage('Signing in...');
 
     try {
-      await warmupApi();
-      setLoginStage('Checking your login...');
       const result = await login(form);
       navigate(result.user.role === 'admin' ? '/admin' : '/employee');
     } catch (err) {
       if (err.code === 'ECONNABORTED') {
-        setError('The server is taking longer than usual to respond. Please try again.');
+        setError('The server did not respond within 20 seconds. It may be waking up—please try signing in again.');
       } else if (!err.response) {
         setError('Unable to connect to the server. Check your internet connection and try again.');
       } else {
