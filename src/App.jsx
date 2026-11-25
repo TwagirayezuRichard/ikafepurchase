@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import StatCard from './components/StatCard';
-import api from './services/api';
+import api, { warmupApi } from './services/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ikafeLogo from './assets/ikafe-logo.png';
 
@@ -103,6 +103,7 @@ function LoginPage() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    warmupApi();
     const userAgent = navigator.userAgent;
     setIsIOS(/iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
     setIsAndroid(/Android/i.test(userAgent));

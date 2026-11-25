@@ -9,6 +9,7 @@ Create a **Static Site** connected to this repository. Leave the root directory 
 - **Environment variable (optional):** `VITE_API_URL=https://purchaseorder-backend.onrender.com/api/v1`
 
 The app defaults to the deployed backend URL above. Set `VITE_API_URL` only if you use a different backend URL.
+When the login page opens, it sends a one-time background health request so a sleeping backend can start while the user enters credentials.
 
 Add a rewrite rule so client-side routes work when opened directly. If this Static Site already exists, add the rule in its **Settings → Redirects/Rewrites** page:
 

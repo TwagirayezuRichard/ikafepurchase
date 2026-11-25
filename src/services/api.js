@@ -5,6 +5,21 @@ const api = axios.create({
   withCredentials: true,
 });
 
+let warmupPromise;
+
+export function warmupApi() {
+  if (!warmupPromise) {
+    warmupPromise = api.get('/health').then(
+      () => undefined,
+      (error) => {
+        warmupPromise = undefined;
+        console.debug('API warm-up failed:', error.message);
+      }
+    );
+  }
+  return warmupPromise;
+}
+
 api.interceptors.request.use((config) => {
   const token = window.sessionStorage.getItem('rpms_session_token');
   if (token) {
