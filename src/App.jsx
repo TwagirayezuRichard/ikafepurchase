@@ -595,6 +595,7 @@ function AdminRequestDetailsPage() {
 function ItemCataloguePage() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState({ name: '', categoryId: '', unit: '', description: '', minimumStockLevel: 0 });
@@ -657,6 +658,8 @@ function ItemCataloguePage() {
     setFormOpen(true);
   };
 
+  const filteredItems = items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+
   return (
     <DashboardShell role="admin" title="Item Catalogue">
       <div className="card">
@@ -685,28 +688,35 @@ function ItemCataloguePage() {
             <button type="button" className="ghost-button small" onClick={() => { setFormOpen(false); setEditingId(''); }}>Cancel</button>
           </form>
         )}
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Unit</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item._id}>
-                <td>{item.name}</td>
-                <td>{item.categoryId?.name || 'Uncategorized'}</td>
-                <td>{item.unit}</td>
-                <td><span className={`status-badge ${item.isActive ? 'approved' : 'rejected'}`}>{item.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td className="table-actions"><button type="button" className="ghost-button small" onClick={() => editItem(item)}>Edit</button><button type="button" className="ghost-button small" onClick={() => toggleItem(item)}>{item.isActive ? 'Deactivate' : 'Activate'}</button></td>
+        <div className="catalogue-toolbar">
+          <SearchField value={search} onChange={setSearch} placeholder="Search catalogue items" />
+          <span className="muted">Showing {filteredItems.length} of {items.length} items</span>
+        </div>
+        <div className="catalogue-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Unit</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredItems.map((item) => (
+                <tr key={item._id}>
+                  <td>{item.name}</td>
+                  <td>{item.categoryId?.name || 'Uncategorized'}</td>
+                  <td>{item.unit}</td>
+                  <td><span className={`status-badge ${item.isActive ? 'approved' : 'rejected'}`}>{item.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td className="table-actions"><button type="button" className="ghost-button small" onClick={() => editItem(item)}>Edit</button><button type="button" className="ghost-button small" onClick={() => toggleItem(item)}>{item.isActive ? 'Deactivate' : 'Activate'}</button></td>
+                </tr>
+              ))}
+              {!filteredItems.length && <tr><td colSpan="5" className="muted">No catalogue items match your search.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </DashboardShell>
   );
@@ -1251,6 +1261,7 @@ function NewPurchaseRequestPage() {
   const [notes, setNotes] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [cataloguePage, setCataloguePage] = useState(1);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -1283,6 +1294,10 @@ function NewPurchaseRequestPage() {
   const visibleItems = items.filter((item) =>
     (!category || item.categoryId?._id === category) && item.name.toLowerCase().includes(search.toLowerCase())
   );
+  const itemsPerPage = 5;
+  const totalCataloguePages = Math.ceil(visibleItems.length / itemsPerPage);
+  const pageItems = visibleItems.slice((cataloguePage - 1) * itemsPerPage, cataloguePage * itemsPerPage);
+  const selectedItemIds = new Set(selected.map((entry) => entry.itemId));
 
   const addItem = (item) => {
     setSelected((current) => {
@@ -1348,53 +1363,79 @@ function NewPurchaseRequestPage() {
   return (
     <DashboardShell role="employee" title="New Purchase Request">
       {loadingDraft && <div className="loading">Loading draft...</div>}
-      <div className="card form-layout">
-        <div>
+      <div className="card form-layout purchase-request-card">
+        <div className="catalogue-panel">
           <h3>Catalogue</h3>
           <div className="toolbar-controls">
-            <SearchField value={search} onChange={setSearch} placeholder="Search catalogue" />
-            <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Filter by category">
+            <SearchField value={search} onChange={(value) => { setSearch(value); setCataloguePage(1); }} placeholder="Search catalogue" />
+            <select value={category} onChange={(event) => { setCategory(event.target.value); setCataloguePage(1); }} aria-label="Filter by category">
               <option value="">All categories</option>
               {categories.map((entry) => <option key={entry._id} value={entry._id}>{entry.name}</option>)}
             </select>
           </div>
           <div className="item-list">
-            {visibleItems.map((item) => (
-              <button type="button" key={item._id} className="item-pill" onClick={() => addItem(item)}>
-                <span>{item.name}</span>
-                <small>{item.categoryId?.name} · {item.unit}</small>
-              </button>
-            ))}
+            {pageItems.map((item) => {
+              const isSelected = selectedItemIds.has(item._id);
+              return (
+                <button
+                  type="button"
+                  key={item._id}
+                  className={`item-pill${isSelected ? ' selected' : ''}`}
+                  aria-pressed={isSelected}
+                  onClick={() => addItem(item)}
+                >
+                  <span><span>{item.name}</span><strong>{isSelected ? 'Added' : '+ Add'}</strong></span>
+                  <small>{item.categoryId?.name} · {item.unit}</small>
+                </button>
+              );
+            })}
             {!visibleItems.length && <p className="muted">No active items match this filter.</p>}
           </div>
+          {totalCataloguePages > 0 && (
+            <nav className="catalogue-pagination" aria-label="Catalogue pages">
+              <span className="muted">
+                Showing {(cataloguePage - 1) * itemsPerPage + 1}–{Math.min(cataloguePage * itemsPerPage, visibleItems.length)} of {visibleItems.length} items
+              </span>
+              <div>
+                <button type="button" className="ghost-button small" disabled={cataloguePage === 1} onClick={() => setCataloguePage((page) => page - 1)}>Previous</button>
+                <span className="catalogue-page-number">Page {cataloguePage} of {totalCataloguePages}</span>
+                <button type="button" className="ghost-button small" disabled={cataloguePage === totalCataloguePages} onClick={() => setCataloguePage((page) => page + 1)}>Next</button>
+              </div>
+            </nav>
+          )}
         </div>
 
-        <div>
-          <h3>Request Summary</h3>
+        <div className="request-summary">
+          <div className="request-summary-heading">
+            <h3>Request Summary</h3>
+            <span>{selected.length} selected</span>
+          </div>
           <p className="muted">Department: {user?.department || 'Not assigned'}</p>
 
-          {selected.length === 0 && <p className="muted">No items selected yet.</p>}
+          <div className="selected-items">
+            {selected.length === 0 && <p className="muted">No items selected yet. Add items from the catalogue.</p>}
 
-          {selected.map((entry) => {
-            const foundItem = items.find((item) => item._id === entry.itemId);
-            if (!foundItem) return null;
+            {selected.map((entry) => {
+              const foundItem = items.find((item) => item._id === entry.itemId);
+              if (!foundItem) return null;
 
-            return (
-              <div className="request-row" key={entry.itemId}>
-                <div>
-                  <strong>{foundItem.name}</strong>
-                  <small>{foundItem.unit}</small>
+              return (
+                <div className="request-row" key={entry.itemId}>
+                  <div>
+                    <strong>{foundItem.name}</strong>
+                    <small>{foundItem.unit}</small>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={entry.quantityRequested}
+                    onChange={(event) => updateQuantity(entry.itemId, event.target.value)}
+                  />
+                  <button type="button" className="ghost-button" onClick={() => removeItem(entry.itemId)}>Remove</button>
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  value={entry.quantityRequested}
-                  onChange={(event) => updateQuantity(entry.itemId, event.target.value)}
-                />
-                <button type="button" className="ghost-button" onClick={() => removeItem(entry.itemId)}>Remove</button>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
           <label>
             <span>Additional comments</span>
