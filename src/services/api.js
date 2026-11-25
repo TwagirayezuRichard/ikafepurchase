@@ -6,16 +6,21 @@ const api = axios.create({
 });
 
 let warmupPromise;
+let warmedAt = 0;
+const WARMUP_CACHE_MS = 5 * 60 * 1000;
 
 export function warmupApi() {
+  if (Date.now() - warmedAt < WARMUP_CACHE_MS) {
+    return Promise.resolve();
+  }
   if (!warmupPromise) {
-    warmupPromise = api.get('/health').then(
-      () => undefined,
-      (error) => {
+    warmupPromise = api.get('/health', { timeout: 90000 })
+      .then(() => {
+        warmedAt = Date.now();
+      })
+      .finally(() => {
         warmupPromise = undefined;
-        console.debug('API warm-up failed:', error.message);
-      }
-    );
+      });
   }
   return warmupPromise;
 }

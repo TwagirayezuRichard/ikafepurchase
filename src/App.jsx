@@ -95,6 +95,7 @@ function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginStage, setLoginStage] = useState('');
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -103,7 +104,7 @@ function LoginPage() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    warmupApi();
+    warmupApi().catch(() => undefined);
     const userAgent = navigator.userAgent;
     setIsIOS(/iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
     setIsAndroid(/Android/i.test(userAgent));
@@ -162,14 +163,24 @@ function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError('');
+    setLoginStage('Connecting to server...');
 
     try {
+      await warmupApi();
+      setLoginStage('Checking your login...');
       const result = await login(form);
       navigate(result.user.role === 'admin' ? '/admin' : '/employee');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password.');
+      if (err.code === 'ECONNABORTED') {
+        setError('The server is taking longer than usual to respond. Please try again.');
+      } else if (!err.response) {
+        setError('Unable to connect to the server. Check your internet connection and try again.');
+      } else {
+        setError(err.response.data?.message || 'Invalid email or password.');
+      }
     } finally {
       setLoading(false);
+      setLoginStage('');
     }
   };
 
@@ -208,7 +219,7 @@ function LoginPage() {
           {error && <div className="alert error">{error}</div>}
 
           <button type="submit" disabled={loading} className="primary-button">
-            {loading ? 'Signing in...' : 'Login'}
+            {loading ? loginStage : 'Login'}
           </button>
         </form>
 
