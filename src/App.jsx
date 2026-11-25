@@ -169,7 +169,7 @@ function LoginPage() {
       navigate(result.user.role === 'admin' ? '/admin' : '/employee');
     } catch (err) {
       if (err.code === 'ECONNABORTED') {
-        setError('The server did not respond within 20 seconds. It may be waking up—please try signing in again.');
+        setError('The server did not respond within 12 seconds. It may be starting up—please wait a few seconds and try again.');
       } else if (!err.response) {
         setError('Unable to connect to the server. Check your internet connection and try again.');
       } else {

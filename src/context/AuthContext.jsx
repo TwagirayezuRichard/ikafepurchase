@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
   }, [initialSession.token]);
 
   const login = async (credentials) => {
-    const response = await api.post('/auth/login', credentials, { timeout: 20000 });
+    const response = await api.post('/auth/login', credentials, { timeout: 12000 });
     if (response.data.token) {
       window.sessionStorage.setItem(TOKEN_KEY, response.data.token);
     }
